@@ -2,8 +2,11 @@ import serial
 import time
 import numpy as np
 import threading
+import matplotlib.pyplot as plt
 
 ###################################################################
+
+
 class SerialThread(threading.Thread):
     def __init__(self, serial_port, length=4):
         threading.Thread.__init__(self)
@@ -27,6 +30,8 @@ class SerialThread(threading.Thread):
         self.serial_read_data = line
         self.finished = True
 ###################################################################
+
+
 def crc8_dvb_s2(crc, a):
     crc ^= np.uint8(a)
     for ii in range(0, 8):
@@ -36,6 +41,8 @@ def crc8_dvb_s2(crc, a):
             crc = np.uint8(crc << 1)
     return crc
 ###################################################################
+
+
 def checkSum(data):
     sum = np.uint8(0)
     for i in range(0, len(data)):
@@ -44,27 +51,27 @@ def checkSum(data):
     return sum
 ###################################################################
 
+
 serial_portF4 = serial.Serial(
     port='/dev/ttyUSB0',
     baudrate=115200,
     parity=serial.PARITY_NONE,
     stopbits=serial.STOPBITS_ONE,
-    bytesize=serial.EIGHTBITS,
-    timeout=0.70)
+    bytesize=serial.EIGHTBITS)
 
-serial_portF4.write([0, 1, 2])
+# serial_portF4.write([0, 1, 2])
 
 vhex = np.vectorize(hex)
 
 
 while True:
-    readSerialThread = SerialThread(serial_portF4, 200)
+    readSerialThread = SerialThread(serial_portF4, 2000)
     readSerialThread.start()
     while not readSerialThread.isFinished():
         pass
 
     data = readSerialThread.getSerialData()
-   
+
     if len(data) < 20:
         continue
     datac = ''.join(map(chr, data))
@@ -72,19 +79,43 @@ while True:
     splitted = datac.split(delimiter)
     uint8list = []
     uint8DataList = []
+    floatDataList = []
     for strin in splitted:
         if len(strin) > 10:
             uint8array = np.array([ord(c) for c in strin], dtype=np.uint8)
             uint8list.append(uint8array)
             uint8DataList.append(uint8array[6:-1])
+            floatDataList.append(uint8array[6:10].view(dtype=np.float32))
     #        uint8DataList.append(uint8array[2:-1].view(dtype=np.uint16))
-    
+
     # # CRC Test
     # for uintArr in uint8list:
     #     print(uintArr[-1]-checkSum(uintArr[2:-1]))
- 
+
  # Print uint8DataList
-    for uintArr in uint8DataList:
+    i = 0
+    while len(uint8DataList[i]) != 9:
+        i += 1
+    uint8DataList = uint8DataList[i:]
+    longarrs = uint8DataList[0:-1:4]
+    xarrs = uint8DataList[1:-1:4]
+    yarrs = uint8DataList[2:-1:4]
+    zarrs = uint8DataList[3:-1:4]
+
+    x = np.zeros((len(xarrs)))
+    y = np.zeros((len(yarrs)))
+    z = np.zeros((len(zarrs)))
+    for i in range(min([len(xarrs),len(yarrs),len(zarrs)])):
+        x[i] = xarrs[i][1]
+        y[i] = yarrs[i][1]
+        z[i] = zarrs[i][1]
+
+    plt.plot(x)
+    plt.plot(y)
+    plt.plot(z)
+    plt.show()
+
+    for uintArr in xarrs:
         print(uintArr)
 
-    time.sleep(1)
+    time.sleep(.1)
