@@ -93,26 +93,29 @@ while True:
     #     print(uintArr[-1]-checkSum(uintArr[2:-1]))
 
  # Print uint8DataList
-    i = 0
-    while len(uint8DataList[i]) != 9:
-        i += 1
-    uint8DataList = uint8DataList[i:]
-    longarrs = uint8DataList[0:-1:4]
-    xarrs = uint8DataList[1:-1:4]
-    yarrs = uint8DataList[2:-1:4]
-    zarrs = uint8DataList[3:-1:4]
+ 
+    longarrs=[]
+    zarrs=[]
 
-    x = np.zeros((len(xarrs)))
-    y = np.zeros((len(yarrs)))
+    for arr in uint8DataList:
+      if len(arr)==9: 
+        longarrs.append(arr)
+      else:
+        zarrs.append(arr)
+
     z = np.zeros((len(zarrs)))
-    for i in range(min([len(xarrs),len(yarrs),len(zarrs)])):
-        x[i] = xarrs[i][1]
-        y[i] = yarrs[i][1]
+    for i in range(len(zarrs)):
         z[i] = zarrs[i][1]
 
-    plt.plot(x)
-    plt.plot(y)
-    plt.plot(z)
+    x = np.zeros((len(longarrs)))
+    y = np.zeros((len(longarrs)))
+    for i in range(len(longarrs)):
+        x[i] = longarrs[i][1:3].view(dtype=np.int16)
+        y[i] = longarrs[i][5:7].view(dtype=np.int16)
+
+    plt.plot(x-np.mean(x))
+    # plt.plot(y-np.mean(y))
+    plt.plot(z[0:-1:4]-np.mean(z))
     plt.show()
 
     for uintArr in xarrs:
